@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Полянка желаний</title>
+<style>
+  @font-face {
+    font-family: 'CuteDino';
+    src: url('CuteDino.ttf') format('truetype');
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #d89fff;
+    font-family: 'CuteDino', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+  #field {
+    position: relative;
+    width: 100%;
+    height: 80vh;
+    z-index: 1;
+  }
+  .flower {
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    background: url('lotus.png') no-repeat center/contain;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .message {
+    position: absolute;
+    font-size: 1.2rem;
+    color: #fff;
+    text-align: center;
+    width: 120px;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    animation: appear 0.6s forwards;
+    z-index: 2;
+  }
+  @keyframes appear {
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  #final {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    z-index: 2;
+  }
+  #final img {
+    width: 80%;
+    max-width: 300px;
+    cursor: pointer;
+  }
+  #final p {
+    color: white;
+    margin: 5px 0;
+  }
+  #catGif {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    max-width: 400px;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+  .heart {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    transform: rotate(-45deg);
+    animation-name: float;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    z-index: 0;
+  }
+  .heart::before,
+  .heart::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+  }
+  .heart::before {
+    top: -50%;
+    left: 0;
+  }
+  .heart::after {
+    left: 50%;
+    top: 0;
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0.5) rotate(-45deg); opacity: 1; }
+    100% { transform: translateY(-50vh) scale(1) rotate(-45deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="field"></div>
+
+<div id="final">
+  <img src="sticker.webp" id="finalImage" alt="final">
+  <p>я люблю тебя и мечтаю, чтобы однажды мы праздновали твой день рождения вместе</p>
+</div>
+
+<img src="cat_hug.gif" id="catGif" alt="котики обнимаются">
+
+<script>
+const messages = [
+  "мне просто хорошо, когда ты рядом",
+  "скучаю по тебе каждый день",
+  "ты делаешь всё вокруг лучше",
+  "иногда думаю о тебе и улыбаюсь",
+  "жаль, что мы далеко",
+  "жду тот день, когда обниму тебя",
+  "люблю твой голос",
+  "и просто тебя люблю"
+];
+
+const field = document.getElementById('field');
+const final = document.getElementById('final');
+const positions = [];
+let musicStarted = false;
+
+// музыка
+const bgMusic = new Audio('100. Shy little girl.mp3');
+bgMusic.volume = 0.5;
+
+// функция генерации случайного цвета
+function getRandomColor() {
+  const colors = ['#ff4d6d','#ffb3c1','#ff8080','#ff99ff','#ff66cc'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// создание разноцветного сердца
+function createHeart() {
+  const heart = document.createElement('div');
+  heart.className = 'heart';
+  const size = 10 + Math.random() * 20;
+  heart.style.width = size + 'px';
+  heart.style.height = size + 'px';
+  heart.style.left = Math.random() * 100 + 'vw';
+  heart.style.background = getRandomColor();
+  heart.style.animationDuration = (3 + Math.random() * 4) + 's';
+  heart.style.opacity = Math.random() * 0.8 + 0.2;
+  document.body.appendChild(heart);
+  setTimeout(() => heart.remove(), 8000);
+}
+setInterval(createHeart, 400);
+
+// генерация позиции без пересечения
+function getPosition() {
+  let top, left, tries = 0;
+  do {
+    top = Math.random() * 70 + 5;
+    left = Math.random() * 90 + 5;
+    tries++;
+    let ok = true;
+    for (let pos of positions) {
+      let dx = left - pos.left;
+      let dy = top - pos.top;
+      if (Math.sqrt(dx*dx + dy*dy) < 15) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      positions.push({top, left});
+      return {top, left};
+    }
+  } while (tries < 100);
+  return {top, left};
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+const shuffledMessages = shuffle([...messages]);
+
+// создаем лотосы
+for (let i = 0; i < messages.length; i++) {
+  const flower = document.createElement('div');
+  flower.className = 'flower';
+  const pos = getPosition();
+  flower.style.top = pos.top + '%';
+  flower.style.left = pos.left + '%';
+
+  flower.addEventListener('click', () => {
+    if (!musicStarted) {
+      bgMusic.play();
+      musicStarted = true;
+    }
+
+    const msg = document.createElement('div');
+    msg.className = 'message';
+    msg.style.top = flower.style.top;
+    msg.style.left = flower.style.left;
+    msg.textContent = shuffledMessages.shift();
+    field.appendChild(msg);
+    flower.style.display = 'none';
+
+    if (shuffledMessages.length === 0) {
+      setTimeout(() => {
+        field.style.display = 'none';
+        final.style.display = 'flex';
+      }, 500);
+    }
+  });
+
+  field.appendChild(flower);
+}
+
+// клик по финальной картинке
+document.getElementById('finalImage').addEventListener('click', () => {
+  alert('пашли в роплакс');
+  document.getElementById('catGif').style.display = 'block';
+});
+</script>
+
+</body>
+</html>
